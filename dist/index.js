@@ -28,13 +28,12 @@ class WallPair {
   }
 
   update(x, y, z, w, h, brightness) {
-    console.log(brightness);
     const color = `rgb(${brightness}, ${brightness}, ${brightness})`;
     this.leftWall.style.left = `${x - WALL_SEPARATION / z}px`; // position.x
     this.leftWall.style.bottom = `${y}px`; // position.y
     this.leftWall.style.width = `${w}px`; // size.w
     this.leftWall.style.height = `${h}px`; // size.h
-    this.leftWall.style.zIndex = Math.round(g_fov_max_z - z + 100);
+    this.leftWall.style.zIndex = Math.round((g_fov_max_z - z) * g_num_of_walls + 100);
     this.leftWall.style.backgroundColor = color;
     this.rightWall.style.left = `${x + WALL_SEPARATION / z}px`; // position.x
     this.rightWall.style.bottom = this.leftWall.style.bottom;

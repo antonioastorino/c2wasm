@@ -12,13 +12,13 @@
 #define KEY_D_MASK (1 << (KEY_D - KEY_BASE))
 #define WINDOW_WIDTH_PX (1000)
 #define WINDOW_HEIGHT_PX (600)
-#define WALL_WIDTH_PX (100)
+#define WALL_WIDTH_PX (50)
 #define WALL_HEIGHT_PX (400)
 #define FOV_MAX_Z (10)
 #define FOV_MIN_Z (1)
-#define NUM_OF_WALLS (5)
+#define NUM_OF_WALLS (20)
 #define WALL_INITIAL_Y (-100)
-#define PLAYER_SPEED_Z (2)
+#define PLAYER_SPEED_Z (1.0)
 #define PLAYER_SPEED_XY (200)
 
 typedef struct
@@ -87,21 +87,20 @@ void engine_init(void)
     jsLogCStr("Init game\0");
     for (int i = 0; i < NUM_OF_WALLS; i++)
     {
-        float position_z = i * (FOV_MAX_Z - FOV_MIN_Z) / NUM_OF_WALLS + FOV_MIN_Z;
-        jsLogFloat(position_z);
-        g_walls[i] = (Wall){
-            .world = (Rect){
-                .position = (Vector3D){
-                    .x = 0,
-                    .y = WALL_INITIAL_Y,
-                    .z = position_z,
+        float position_z = (float)i * (float)(FOV_MAX_Z - FOV_MIN_Z) / (float)NUM_OF_WALLS + (float)FOV_MIN_Z;
+        g_walls[i]       = (Wall){
+                  .world = (Rect){
+                      .position = (Vector3D){
+                          .x = 0,
+                          .y = WALL_INITIAL_Y,
+                          .z = position_z,
                 },
-                .size = (Size2D){
-                    .w = WALL_WIDTH_PX,
-                    .h = WALL_HEIGHT_PX,
+                      .size = (Size2D){
+                          .w = WALL_WIDTH_PX,
+                          .h = WALL_HEIGHT_PX,
                 },
             },
-            .brightness = 0,
+                  .brightness = 0,
         };
     }
     jsSetEngineParams((EngineParams){
@@ -153,7 +152,6 @@ void __update_player(void)
     {
         g_player.position.x -= PLAYER_SPEED_XY * g_dt;
     }
-    jsLogVector3D(g_player.position);
 }
 
 void __evolve_wall(int wall_index)
@@ -162,7 +160,7 @@ void __evolve_wall(int wall_index)
     wall_p->world.position.z -= PLAYER_SPEED_Z * g_dt;
     if (wall_p->world.position.z < FOV_MIN_Z)
     {
-        wall_p->world.position.z += (FOV_MAX_Z - FOV_MIN_Z);
+        wall_p->world.position.z += (float)(FOV_MAX_Z - FOV_MIN_Z);
     }
     wall_p->proj.position.x = (wall_p->world.position.x - wall_p->world.size.w / 2 - g_player.position.x) / wall_p->world.position.z + WINDOW_WIDTH_PX / 2;
     wall_p->proj.position.y = (wall_p->world.position.y - wall_p->world.size.h / 2 - g_player.position.y) / wall_p->world.position.z + WINDOW_HEIGHT_PX / 2;
@@ -181,7 +179,4 @@ void engine_update(void)
         __evolve_wall(i);
         jsUpdateWallRect(i, g_walls[i].proj, g_walls[i].brightness);
     }
-
-    //    update_enemy();
-    jsLogVector3D(g_player.position);
 }
