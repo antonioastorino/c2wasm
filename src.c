@@ -12,8 +12,11 @@
 #define KEY_D_MASK (1 << (KEY_D - KEY_BASE))
 #define WINDOW_WIDTH_PX (1000)
 #define WINDOW_HEIGHT_PX (600)
-#define WALL_SEPARATION_X (300)
-#define WALL_INITIAL_Z (10)
+#define WALL_WIDTH_PX (100)
+#define WALL_HEIGHT_PX (400)
+#define FOV_MAX_Z (10)
+#define FOV_MIN_Z (1)
+#define NUM_OF_WALLS (5)
 #define WALL_INITIAL_Y (-100)
 #define PLAYER_SPEED_Z (2)
 #define PLAYER_SPEED_XY (200)
@@ -42,6 +45,7 @@ typedef struct
 {
     Rect world;
     Rect proj;
+    int brightness;
 } Wall;
 
 typedef struct
@@ -55,24 +59,14 @@ typedef struct
 {
     int window_height_px;
     int window_width_px;
-    int wall_initial_z;
+    int fov_max_z;
+    int fov_min_z;
+    int num_of_walls;
 } EngineParams;
 
 float g_dt = 0;
 
-Wall g_wall = {
-    .world = (Rect){
-        .position = (Vector3D){
-            .x = 0,
-            .y = WALL_INITIAL_Y,
-            .z = WALL_INITIAL_Z,
-        },
-        .size = (Size2D){
-            .w = 200,
-            .h = 300,
-        },
-    },
-};
+Wall g_walls[NUM_OF_WALLS];
 
 void jsLogVector3D(Vector3D);
 void jsLogCStr(char*);
@@ -80,7 +74,7 @@ void jsLogInt(int);
 void jsLogFloat(float);
 float jsGetDt(void);
 void jsSetEngineParams(EngineParams);
-void jsUpdateWallRect(Rect);
+void jsUpdateWallRect(int, Rect, int);
 
 int g_keys_pressed = 0;
 
@@ -92,10 +86,31 @@ Entity g_player = (Entity){
 void engine_init(void)
 {
     jsLogCStr("Init game\0");
+    for (int i = 0; i < NUM_OF_WALLS; i++)
+    {
+        float position_z = i * (FOV_MAX_Z - FOV_MIN_Z) / NUM_OF_WALLS + FOV_MIN_Z;
+        jsLogFloat(position_z);
+        g_walls[i] = (Wall){
+            .world = (Rect){
+                .position = (Vector3D){
+                    .x = 0,
+                    .y = WALL_INITIAL_Y,
+                    .z = position_z,
+                },
+                .size = (Size2D){
+                    .w = WALL_WIDTH_PX,
+                    .h = WALL_HEIGHT_PX,
+                },
+            },
+            .brightness = 0,
+        };
+    }
     jsSetEngineParams((EngineParams){
         .window_height_px = WINDOW_HEIGHT_PX,
         .window_width_px  = WINDOW_WIDTH_PX,
-        .wall_initial_z   = WALL_INITIAL_Z,
+        .fov_max_z        = FOV_MAX_Z,
+        .fov_min_z        = FOV_MIN_Z,
+        .num_of_walls     = NUM_OF_WALLS,
     });
 }
 
@@ -142,26 +157,32 @@ void __update_player()
     jsLogVector3D(g_player.position);
 }
 
-void __update_wall()
+void __evolve_wall(int wall_index)
 {
-    g_wall.world.position.z -= PLAYER_SPEED_Z * g_dt;
-    if (g_wall.world.position.z < 1)
+    Wall* wall_p = &g_walls[wall_index];
+    wall_p->world.position.z -= PLAYER_SPEED_Z * g_dt;
+    if (wall_p->world.position.z < FOV_MIN_Z)
     {
-        g_wall.world.position.z = WALL_INITIAL_Z;
+        wall_p->world.position.z += (FOV_MAX_Z - FOV_MIN_Z);
     }
-    g_wall.proj.position.x = (g_wall.world.position.x - g_wall.world.size.w / 2 - g_player.position.x) / g_wall.world.position.z + WINDOW_WIDTH_PX / 2;
-    g_wall.proj.position.y = (g_wall.world.position.y - g_wall.world.size.h / 2 - g_player.position.y) / g_wall.world.position.z + WINDOW_HEIGHT_PX / 2;
-    g_wall.proj.position.z = g_wall.world.position.z;
-    g_wall.proj.size.w     = g_wall.world.size.w / g_wall.world.position.z;
-    g_wall.proj.size.h     = g_wall.world.size.h / g_wall.world.position.z;
-    jsUpdateWallRect(g_wall.proj);
+    wall_p->proj.position.x = (wall_p->world.position.x - wall_p->world.size.w / 2 - g_player.position.x) / wall_p->world.position.z + WINDOW_WIDTH_PX / 2;
+    wall_p->proj.position.y = (wall_p->world.position.y - wall_p->world.size.h / 2 - g_player.position.y) / wall_p->world.position.z + WINDOW_HEIGHT_PX / 2;
+    wall_p->proj.position.z = wall_p->world.position.z;
+    wall_p->proj.size.w     = wall_p->world.size.w / wall_p->world.position.z;
+    wall_p->proj.size.h     = wall_p->world.size.h / wall_p->world.position.z;
+    wall_p->brightness      = 255 * (1 - (wall_p->world.position.z - FOV_MIN_Z) / (FOV_MAX_Z - FOV_MIN_Z));
 }
 
 void engine_update()
 {
     g_dt = jsGetDt();
     __update_player();
-    __update_wall();
+    for (int i = 0; i < NUM_OF_WALLS; i++)
+    {
+        __evolve_wall(i);
+        jsUpdateWallRect(i, g_walls[i].proj, g_walls[i].brightness);
+    }
+
     //    update_enemy();
     jsLogVector3D(g_player.position);
 }
