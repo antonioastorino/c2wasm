@@ -10,37 +10,26 @@ let g_fov_max_z = 0;
 let g_fov_min_z = 0;
 let g_num_of_walls = 0;
 
-const WALL_SEPARATION = 300;
-
-class WallPair {
-  leftWall;
-  rightWall;
+class Wall {
+  wallDiv;
   constructor(canvas) {
-    this.leftWall = document.createElement("div");
-    this.leftWall.style.position = "absolute";
-    this.leftWall.style.backgroundColor = "white";
-    this.rightWall = document.createElement("div");
-    this.rightWall.style.position = "absolute";
-    this.rightWall.style.backgroundColor = "white";
+    this.wallDiv = document.createElement("div");
+    this.wallDiv.style.position = "absolute";
+    this.wallDiv.style.borderStyle = "solid";
+    this.wallDiv.style.borderColor = "red";
 
-    canvas.appendChild(this.leftWall);
-    canvas.appendChild(this.rightWall);
+    canvas.appendChild(this.wallDiv);
   }
 
-  update(x, y, z, w, h, brightness) {
+  update(x, y, z, w, h, brightness, border_width) {
     const color = `rgb(${brightness}, ${brightness}, ${brightness})`;
-    this.leftWall.style.left = `${x - WALL_SEPARATION / z}px`; // position.x
-    this.leftWall.style.bottom = `${y}px`; // position.y
-    this.leftWall.style.width = `${w}px`; // size.w
-    this.leftWall.style.height = `${h}px`; // size.h
-    this.leftWall.style.zIndex = Math.round((g_fov_max_z - z) * g_num_of_walls + 100);
-    this.leftWall.style.backgroundColor = color;
-    this.rightWall.style.left = `${x + WALL_SEPARATION / z}px`; // position.x
-    this.rightWall.style.bottom = this.leftWall.style.bottom;
-    this.rightWall.style.width = this.leftWall.style.width;
-    this.rightWall.style.height = this.leftWall.style.height;
-    this.rightWall.style.zIndex = this.leftWall.style.zIndex;
-    this.rightWall.style.backgroundColor = color;
+    this.wallDiv.style.left = `${x}px`; // position.x
+    this.wallDiv.style.bottom = `${y}px`; // position.y
+    this.wallDiv.style.width = `${w}px`; // size.w
+    this.wallDiv.style.height = `${h}px`; // size.h
+    this.wallDiv.style.zIndex = Math.round((g_fov_max_z - z) * g_num_of_walls + 100);
+    this.wallDiv.style.borderColor = color;
+    this.wallDiv.style.borderWidth = `${border_width}px`;
   }
 }
 
@@ -69,9 +58,9 @@ const jsLogFloat = (v) => {
   console.log(`float: ${v}`);
 };
 
-function jsUpdateWallRect(wallNumber, struct_p, brightness) {
+function jsUpdateWallRect(wallNumber, struct_p, brightness, border_width) {
   const [x, y, z, w, h] = new Float32Array(memory.buffer, struct_p, 5);
-  g_wall_pairs[wallNumber].update(x, y, z, w, h, brightness);
+  g_wall_pairs[wallNumber].update(x, y, z, w, h, brightness, border_width);
 }
 
 function jsSetEngineParams(params_p) {
@@ -118,7 +107,7 @@ window.onload = () => {
     result.instance.exports.engine_init();
 
     for (let i = 0; i < g_num_of_walls; i++) {
-      g_wall_pairs.push(new WallPair(canvas));
+      g_wall_pairs.push(new Wall(canvas));
     }
     canvas.style.width = `${g_window_width}px`;
     canvas.style.height = `${g_window_height}px`;

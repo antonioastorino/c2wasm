@@ -12,12 +12,12 @@
 #define KEY_D_MASK (1 << (KEY_D - KEY_BASE))
 #define WINDOW_WIDTH_PX (1000)
 #define WINDOW_HEIGHT_PX (600)
-#define WALL_WIDTH_PX (50)
+#define WALL_WIDTH_PX (600)
 #define WALL_HEIGHT_PX (400)
+#define WALL_BORDER_PX (100)
 #define FOV_MAX_Z (10)
 #define FOV_MIN_Z (1)
 #define NUM_OF_WALLS (20)
-#define WALL_INITIAL_Y (-100)
 #define PLAYER_SPEED_Z (1.0)
 #define PLAYER_SPEED_XY (200)
 
@@ -45,6 +45,7 @@ typedef struct
     Rect world;
     Rect proj;
     int brightness;
+    float border_width;
 } Wall;
 
 typedef struct
@@ -73,7 +74,7 @@ void jsLogInt(int);
 void jsLogFloat(float);
 float jsGetDt(void);
 void jsSetEngineParams(EngineParams);
-void jsUpdateWallRect(int, Rect, int);
+void jsUpdateWallRect(int, Rect, int, float);
 
 int g_keys_pressed = 0;
 
@@ -92,7 +93,7 @@ void engine_init(void)
                   .world = (Rect){
                       .position = (Vector3D){
                           .x = 0,
-                          .y = WALL_INITIAL_Y,
+                          .y = 0,
                           .z = position_z,
                 },
                       .size = (Size2D){
@@ -100,7 +101,8 @@ void engine_init(void)
                           .h = WALL_HEIGHT_PX,
                 },
             },
-                  .brightness = 0,
+                  .brightness   = 0,
+                  .border_width = WALL_BORDER_PX,
         };
     }
     jsSetEngineParams((EngineParams){
@@ -152,6 +154,7 @@ void __update_player(void)
     {
         g_player.position.x -= PLAYER_SPEED_XY * g_dt;
     }
+    jsLogVector3D(g_player.position);
 }
 
 void __evolve_wall(int wall_index)
@@ -162,12 +165,19 @@ void __evolve_wall(int wall_index)
     {
         wall_p->world.position.z += (float)(FOV_MAX_Z - FOV_MIN_Z);
     }
-    wall_p->proj.position.x = (wall_p->world.position.x - wall_p->world.size.w / 2 - g_player.position.x) / wall_p->world.position.z + WINDOW_WIDTH_PX / 2;
-    wall_p->proj.position.y = (wall_p->world.position.y - wall_p->world.size.h / 2 - g_player.position.y) / wall_p->world.position.z + WINDOW_HEIGHT_PX / 2;
+    wall_p->proj.position.x =                                                                        //
+        (wall_p->world.position.x - wall_p->world.size.w / 2 - WALL_BORDER_PX - g_player.position.x) //
+            / wall_p->world.position.z
+        + WINDOW_WIDTH_PX / 2;
+    wall_p->proj.position.y =                                                                        //
+        (wall_p->world.position.y - wall_p->world.size.h / 2 - WALL_BORDER_PX - g_player.position.y) //
+            / wall_p->world.position.z
+        + WINDOW_HEIGHT_PX / 2;
     wall_p->proj.position.z = wall_p->world.position.z;
     wall_p->proj.size.w     = wall_p->world.size.w / wall_p->world.position.z;
     wall_p->proj.size.h     = wall_p->world.size.h / wall_p->world.position.z;
     wall_p->brightness      = 255 * (1 - (wall_p->world.position.z - FOV_MIN_Z) / (FOV_MAX_Z - FOV_MIN_Z));
+    wall_p->border_width    = WALL_BORDER_PX / wall_p->world.position.z;
 }
 
 void engine_update(void)
@@ -177,6 +187,6 @@ void engine_update(void)
     for (int i = 0; i < NUM_OF_WALLS; i++)
     {
         __evolve_wall(i);
-        jsUpdateWallRect(i, g_walls[i].proj, g_walls[i].brightness);
+        jsUpdateWallRect(i, g_walls[i].proj, g_walls[i].brightness, g_walls[i].border_width);
     }
 }
