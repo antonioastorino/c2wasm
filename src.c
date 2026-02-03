@@ -21,7 +21,6 @@
 #define PLAYER_SPEED_Z (2)
 #define PLAYER_SPEED_XY (200)
 
-typedef int bool;
 typedef struct
 {
     float x;
@@ -136,7 +135,7 @@ void engine_key_up(int key_code)
     jsLogInt(g_keys_pressed);
 }
 
-void __update_player()
+void __update_player(void)
 {
     if (g_keys_pressed & KEY_W_MASK)
     {
@@ -173,7 +172,7 @@ void __evolve_wall(int wall_index)
     wall_p->brightness      = 255 * (1 - (wall_p->world.position.z - FOV_MIN_Z) / (FOV_MAX_Z - FOV_MIN_Z));
 }
 
-void engine_update()
+void engine_update(void)
 {
     g_dt = jsGetDt();
     __update_player();

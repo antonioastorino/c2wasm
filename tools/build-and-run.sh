@@ -3,6 +3,11 @@ set -eu
 
 clang \
     -O3 \
+    -Wall \
+    -Wextra \
+    -Werror \
+    -pedantic \
+    -std=c2x \
     --target=wasm32 \
     --no-standard-libraries \
     -Wl,--no-entry \
