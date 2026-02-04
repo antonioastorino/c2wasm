@@ -1,6 +1,6 @@
 # DivGame - a "canvasless" game
 
-The game is displayed in an HTMLDivElement, a.k.a. `div`. Every element in the game is an HTML element. The logic is implemented in C, compiled to WebAssembly.
+The game is displayed in an HTMLDivElement, a.k.a. `div`. Every element in the game is an HTML element. The logic is implemented in C, compiled to WebAssembly using `clang`.
 
 ## How to build
 Run
@@ -21,3 +21,9 @@ Open a Web browser at `localhost:8001`
 
 ## Resources
 - [Player image](https://www.hiclipart.com/free-transparent-background-png-clipart-dswvq/download?width=100)
+- [Compiling C to WASM](https://depth-first.com/articles/2019/10/16/compiling-c-to-webassembly-and-running-it-without-emscripten/)
+
+## Compiler/linker errors on MacOS
+When I tried to compile a `C` file to `wasm`, I couldn't get it to work, although I had followed all the possible guidelines I could find (e.g., the one above).
+By adding the `-v` flag to the `clang` command, I was able to detect the lack of `wasm-ld` linker in my system.
+Luckily, I found a comment on [starckoverflow](https://stackoverflow.com/questions/57322431/wasm-ld-not-found-after-performing-brew-install-wabt) stating that `wasm-ld` is shipped as part of `lld`.
