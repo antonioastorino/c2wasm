@@ -16,14 +16,15 @@
 #define _START_MASK (1 << (KEY_G - KEY_BASE))
 #define WINDOW_WIDTH_PX (1000)
 #define WINDOW_HEIGHT_PX (600)
-#define WALL_WIDTH_PX (1000)
-#define WALL_HEIGHT_PX (600)
+#define WALL_WIDTH_PX (1400)
+#define WALL_HEIGHT_PX (1000)
 #define WALL_BORDER_PX (1000)
 #define FOV_MAX_Z (10)
 #define FOV_MIN_Z (1)
 #define NUM_OF_WALLS (20)
-#define PLAYER_SPEED_Z (3)
-#define PLAYER_SPEED_XY (400)
+#define PLAYER_SPEED_Z (5)
+#define PLAYER_ACCELERATION_XY (2000.0)
+#define FRICTION (-2.0)
 #define PLAYER_SIZE_PX (100)
 #define MAX_PLAYER_POS_X (10000) //((WALL_WIDTH_PX - PLAYER_SIZE_PX) / 2)
 #define MAX_PLAYER_POS_Y (10000) //((WALL_HEIGHT_PX - PLAYER_SIZE_PX) / 2)
@@ -58,6 +59,7 @@ typedef struct
 typedef struct
 {
     Vector3D position;
+    Vector3D speed;
     bool alive;
     bool animated;
 } Entity;
@@ -98,7 +100,7 @@ typedef enum
 float g_dt                   = 0;
 int g_keys_pressed           = 0;
 Wall g_walls[NUM_OF_WALLS]   = {0};
-Entity g_player              = (Entity){(Vector3D){.x = 0, .y = 0, .z = 0}, .alive = TRUE, .animated = TRUE};
+Entity g_player              = (Entity){.position = {0}, .speed = {0}, .alive = TRUE, .animated = TRUE};
 PlayerAction g_player_action = {0};
 float g_path_x               = 0.0;
 float g_path_y               = 0.0;
@@ -164,8 +166,6 @@ void engine_key_down(int key_code)
         return;
     }
     g_keys_pressed |= 1 << (key_code - KEY_BASE);
-    jsLogCStr("pressed\0");
-    jsLogInt(g_keys_pressed);
 }
 
 void engine_key_up(int key_code)
@@ -175,8 +175,6 @@ void engine_key_up(int key_code)
         return;
     }
     g_keys_pressed &= ~(1 << (key_code - KEY_BASE));
-    jsLogCStr("released\0");
-    jsLogInt(g_keys_pressed);
 }
 
 void __read_input(void)
@@ -271,10 +269,16 @@ void __update_output(void)
 {
     if (g_game_state == GAME_RUNNING)
     {
-        g_player.position.y += PLAYER_SPEED_XY * g_dt * g_player_action.player_up;
-        g_player.position.y -= PLAYER_SPEED_XY * g_dt * g_player_action.player_down;
-        g_player.position.x += PLAYER_SPEED_XY * g_dt * g_player_action.player_right;
-        g_player.position.x -= PLAYER_SPEED_XY * g_dt * g_player_action.player_left;
+        g_player.speed.x += g_dt *                                                                                   //
+                            (FRICTION * g_player.speed.x                                                             //
+                             + PLAYER_ACCELERATION_XY * (g_player_action.player_right - g_player_action.player_left) //
+                            );
+        g_player.speed.y += g_dt *                                                                                //
+                            (FRICTION * g_player.speed.y                                                          //
+                             + PLAYER_ACCELERATION_XY * (g_player_action.player_up - g_player_action.player_down) //
+                            );
+        g_player.position.x += g_player.speed.x * g_dt;
+        g_player.position.y += g_player.speed.y * g_dt;
         for (int wall_index = 0; wall_index < NUM_OF_WALLS; wall_index++)
         {
             jsUpdateWallRect(wall_index, //
