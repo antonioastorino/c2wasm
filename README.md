@@ -2,6 +2,9 @@
 
 The game is displayed in an HTMLDivElement, a.k.a. `div`. Every element in the game is an HTML element. The logic is implemented in C, compiled to WebAssembly using `clang`.
 
+<img width="1026" height="623" alt="game" src="https://github.com/user-attachments/assets/06949c8b-adc8-4148-ac88-68347a7c75de" />
+
+
 ## How to build
 Run
 ```
