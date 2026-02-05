@@ -26,8 +26,15 @@
 #define PLAYER_ACCELERATION_XY (2000.0)
 #define FRICTION (-2.0)
 #define PLAYER_SIZE_PX (100)
+#define OBSTACLE_SIZE_PX (100)
 #define MAX_PLAYER_POS_X (10000) //((WALL_WIDTH_PX - PLAYER_SIZE_PX) / 2)
 #define MAX_PLAYER_POS_Y (10000) //((WALL_HEIGHT_PX - PLAYER_SIZE_PX) / 2)
+
+typedef struct
+{
+    float x;
+    float y;
+} Vector2D;
 
 typedef struct
 {
@@ -50,8 +57,16 @@ typedef struct
 
 typedef struct
 {
+    bool present;
+    Vector2D position;
+    Rect proj_rect;
+} Obstacle;
+
+typedef struct
+{
     Rect world;
     Rect proj;
+    Obstacle obstacle;
     int brightness;
     float border_width;
 } Wall;
@@ -59,7 +74,7 @@ typedef struct
 typedef struct
 {
     Vector3D position;
-    Vector3D speed;
+    Vector2D speed;
     bool alive;
     bool animated;
 } Entity;
@@ -126,7 +141,8 @@ void jsLogInt(int);
 void jsLogFloat(float);
 float jsGetDt(void);
 void jsSetEngineParams(EngineParams);
-void jsUpdateWallRect(int, Rect, int, float);
+void jsUpdateWall(int, Rect, int, float, bool, Rect);
+float jsGetRandom(void);
 
 void engine_init(void)
 {
@@ -137,8 +153,6 @@ void engine_init(void)
         g_walls[i]       = (Wall){
                   .world = (Rect){
                       .position = (Vector3D){
-                          .x = 0,
-                          .y = 0,
                           .z = position_z,
                 },
                       .size = (Size2D){
@@ -146,7 +160,6 @@ void engine_init(void)
                           .h = WALL_HEIGHT_PX,
                 },
             },
-                  .brightness   = 0,
                   .border_width = WALL_BORDER_PX,
         };
     }
@@ -224,6 +237,16 @@ void __evolve_wall(int wall_index, int path_element_index)
             wall_p->world.position.z += (float)(FOV_MAX_Z - FOV_MIN_Z);
             wall_p->world.position.x = g_path_x;
             wall_p->world.position.y = g_path_y;
+            if (jsGetRandom() < 0.1)
+            {
+                wall_p->obstacle.present    = true;
+                wall_p->obstacle.position.x = jsGetRandom() * (WALL_WIDTH_PX - OBSTACLE_SIZE_PX);
+                wall_p->obstacle.position.y = jsGetRandom() * (WALL_HEIGHT_PX - OBSTACLE_SIZE_PX);
+            }
+            else
+            {
+                wall_p->obstacle.present = false;
+            }
         }
         wall_p->proj.position.x =                                                                        //
             (wall_p->world.position.x - wall_p->world.size.w / 2 - WALL_BORDER_PX - g_player.position.x) //
@@ -238,6 +261,13 @@ void __evolve_wall(int wall_index, int path_element_index)
         wall_p->proj.size.h     = wall_p->world.size.h / wall_p->world.position.z;
         wall_p->brightness      = 255 * (1 - (wall_p->world.position.z - FOV_MIN_Z) / (FOV_MAX_Z - FOV_MIN_Z));
         wall_p->border_width    = WALL_BORDER_PX / wall_p->world.position.z;
+        if (wall_p->obstacle.present)
+        {
+            wall_p->obstacle.proj_rect.size.w     = OBSTACLE_SIZE_PX / wall_p->world.position.z;
+            wall_p->obstacle.proj_rect.size.h     = OBSTACLE_SIZE_PX / wall_p->world.position.z;
+            wall_p->obstacle.proj_rect.position.x = wall_p->obstacle.position.x / wall_p->world.position.z;
+            wall_p->obstacle.proj_rect.position.y = wall_p->obstacle.position.y / wall_p->world.position.z;
+        }
     }
     break;
     case GAME_PAUSED:
@@ -281,10 +311,12 @@ void __update_output(void)
         g_player.position.y += g_player.speed.y * g_dt;
         for (int wall_index = 0; wall_index < NUM_OF_WALLS; wall_index++)
         {
-            jsUpdateWallRect(wall_index, //
-                             g_walls[wall_index].proj,
-                             g_walls[wall_index].brightness,
-                             g_walls[wall_index].border_width);
+            jsUpdateWall(wall_index, //
+                         g_walls[wall_index].proj,
+                         g_walls[wall_index].brightness,
+                         g_walls[wall_index].border_width,
+                         g_walls[wall_index].obstacle.present,
+                         g_walls[wall_index].obstacle.proj_rect);
         }
     }
 }
