@@ -1,5 +1,3 @@
-#define TRUE (1)
-#define FALSE (0)
 #define KEY_BASE (65)
 #define KEY_MAX (90)
 #define KEY_W (87)
@@ -126,7 +124,7 @@ typedef enum
 float g_dt                   = 0;
 int g_keys_pressed           = 0;
 Wall g_walls[NUM_OF_WALLS]   = {0};
-Entity g_player              = (Entity){.position = {0}, .speed = {0}, .alive = TRUE, .animated = TRUE};
+Entity g_player              = (Entity){.position = {0}, .speed = {0}, .alive = true, .animated = false};
 PlayerAction g_player_action = {0};
 float g_path_x               = 0.0;
 float g_path_y               = 0.0;
@@ -309,15 +307,20 @@ void __evolve(void)
         if (g_player_action.player_start)
         {
             g_game_state                 = GAME_RUNNING;
-            g_player.speed.z             = PLAYER_INITIAL_SPEED_Z;
+            g_player.speed               = (Vector3D){.x = 0, .y = 0, .z = PLAYER_INITIAL_SPEED_Z};
+            g_player.position            = (Vector3D){.x = 0, .y = 0, .z = 0};
             g_player_action.player_start = false;
             tick_threshold               = 10;
             path_element_index           = 0;
             g_tick                       = 0;
             g_score                      = 0;
+            g_path_x                     = 0;
+            g_path_y                     = 0;
             for (int wallIndex = 0; wallIndex < NUM_OF_WALLS; wallIndex++)
             {
                 g_walls[wallIndex].obstacle.present = false;
+                g_walls[wallIndex].world.position.x = 0;
+                g_walls[wallIndex].world.position.y = 0;
             }
             jsUpdateScore(0);
         }
