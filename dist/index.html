@@ -8,11 +8,21 @@
   <body id="body">
     <script src="./index.js" type="module"></script>
     <div id="canvas">
+      <div id="score">SCORE: <span id="score-value">0</span></div>
+      <div id="speed">SPEED: <span id="speed-value">0</span></div>
       <div id="player"></div>
       <div id="game-begin-view">
         G to start <br />W, A, S, D to move<br />P to pause<br />Collect coins and dodge bombs to stay alive
       </div>
-      <div id="game-over-view">GAME OVER<br />Press G to start</div>
+      <div id="game-over-view">
+        <p>
+          GAME OVER
+          <br />
+          Your score: <span id="final-score">0</span>
+          <br />
+          Press G to restart
+        </p>
+      </div>
     </div>
   </body>
 </html>

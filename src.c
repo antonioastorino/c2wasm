@@ -23,9 +23,10 @@
 #define FOV_MIN_Z (1)
 #define NUM_OF_WALLS (20)
 #define PLAYER_INITIAL_SPEED_Z (5.0)
-#define PLAYER_GAME_OVER_SPEED_Z (0.5)
+#define PLAYER_GAME_OVER_SPEED_Z (1.0)
 #define PLAYER_ACCELERATION_XY (5000.0)
-#define FRICTION_Z (-0.1)
+#define BOOST_Z (0.5)
+#define FRICTION_Z (-0.28)
 #define FRICTION_XY (-2.0)
 #define PLAYER_SIZE_PX (100)
 #define OBSTACLE_SIZE_PX (100)
@@ -83,7 +84,7 @@ typedef struct
 typedef struct
 {
     Vector3D position;
-    Vector2D speed;
+    Vector3D speed;
     bool alive;
     bool animated;
 } Entity;
@@ -133,7 +134,6 @@ int g_tick                   = 0;
 bool g_prev_pause_pressed    = false;
 GameState g_game_state       = GAME_BEGIN;
 int g_score                  = 0;
-float g_player_speed_z       = 0;
 
 const PathElement g_path[] = {
     {10, 0, 0},
@@ -158,6 +158,8 @@ float jsGetRandom(void);
 bool jsCheckCollision(int);
 void jsInitBomb(int);
 void jsInitCoin(int);
+void jsUpdateScore(int);
+void jsUpdateSpeed(float);
 
 void engine_init(void)
 {
@@ -223,7 +225,7 @@ void __evolve_wall(int wall_index, int path_element_index)
 {
     g_dt         = jsGetDt();
     Wall* wall_p = &g_walls[wall_index];
-    wall_p->world.position.z -= (float)g_player_speed_z * g_dt;
+    wall_p->world.position.z -= (float)g_player.speed.z * g_dt;
     if (wall_p->obstacle.present                   //
         && wall_p->world.position.z > FOV_MIN_Z && //
         wall_p->world.position.z <= ((float)FOV_MIN_Z + WALL_GAP_Z))
@@ -232,23 +234,23 @@ void __evolve_wall(int wall_index, int path_element_index)
         {
             if (wall_p->obstacle.type == OBSTACLE_BOMB)
             {
-                g_score--;
-                g_player_speed_z--;
+                g_score = 0;
+                g_player.speed.z -= BOOST_Z;
             }
             else
             {
                 g_score++;
-                g_player_speed_z++;
+                g_player.speed.z += BOOST_Z;
             }
             wall_p->obstacle.present = false;
-            jsLogInt(g_score);
+            jsUpdateScore(g_score);
         }
     }
     if (wall_p->world.position.z <= FOV_MIN_Z)
     {
         // Reset near-field wall so that it reappears in the back
-        g_path_x += g_path[path_element_index].inc_x;
-        g_path_y += g_path[path_element_index].inc_y;
+        g_path_x += g_path[path_element_index].inc_x * 0.2 * g_tick;
+        g_path_y += g_path[path_element_index].inc_y * 0.2 * g_tick;
         g_tick++;
         wall_p->world.position.z += (float)(FOV_MAX_Z - FOV_MIN_Z);
         wall_p->world.position.x = g_path_x;
@@ -307,15 +309,17 @@ void __evolve(void)
         if (g_player_action.player_start)
         {
             g_game_state                 = GAME_RUNNING;
-            g_player_speed_z             = PLAYER_INITIAL_SPEED_Z;
+            g_player.speed.z             = PLAYER_INITIAL_SPEED_Z;
             g_player_action.player_start = false;
             tick_threshold               = 10;
             path_element_index           = 0;
             g_tick                       = 0;
+            g_score                      = 0;
             for (int wallIndex = 0; wallIndex < NUM_OF_WALLS; wallIndex++)
             {
                 g_walls[wallIndex].obstacle.present = false;
             }
+            jsUpdateScore(0);
         }
         break;
     case GAME_RUNNING:
@@ -324,7 +328,7 @@ void __evolve(void)
             g_game_state = GAME_PAUSED;
             break;
         }
-        if (g_player_speed_z <= PLAYER_GAME_OVER_SPEED_Z)
+        if (g_player.speed.z <= PLAYER_GAME_OVER_SPEED_Z)
         {
             g_game_state = GAME_OVER;
             break;
@@ -335,7 +339,7 @@ void __evolve(void)
             path_element_index = (path_element_index + 1) % (sizeof(g_path) / sizeof(g_path[0]));
             tick_threshold     = g_path[path_element_index].ticks;
         }
-        g_player_speed_z += g_dt * FRICTION_Z;
+        g_player.speed.z += g_dt * FRICTION_Z;
         for (int wall_index = 0; wall_index < NUM_OF_WALLS; wall_index++)
         {
             __evolve_wall(wall_index, path_element_index);
@@ -375,6 +379,7 @@ void __update_output(void)
                          g_walls[wall_index].obstacle.proj_rect);
         }
     }
+    jsUpdateSpeed(g_player.speed.z);
 }
 
 GameState engine_update(void)

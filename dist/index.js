@@ -11,8 +11,11 @@ let g_fov_min_z = 0;
 let g_num_of_walls = 0;
 let g_player = undefined;
 let g_canvas = undefined;
-let g_beginView = undefined;
-let g_overView = undefined;
+let g_scoreValueDiv = undefined;
+let g_speedValueDiv = undefined;
+let g_beginViewDiv = undefined;
+let g_overViewDiv = undefined;
+let g_finalScore = 0;
 
 const GameState = {
   BEGIN: 0,
@@ -135,14 +138,15 @@ function nextFrame(t_ms) {
   const gameState = g_next_frame_cb();
   switch (gameState) {
     case GameState.BEGIN:
-      g_beginView.style.display = "flex";
+      g_beginViewDiv.style.display = "flex";
       break;
     case GameState.OVER:
-      g_overView.style.display = "flex";
+      g_overViewDiv.style.display = "flex";
+      document.getElementById("final-score").innerText = g_finalScore.toFixed(2);
       break;
     default:
-      g_beginView.style.display = "none";
-      g_overView.style.display = "none";
+      g_beginViewDiv.style.display = "none";
+      g_overViewDiv.style.display = "none";
   }
   requestAnimationFrame(nextFrame);
 }
@@ -164,6 +168,15 @@ function jsCheckCollision(wallIndex) {
   return g_walls[wallIndex].checkCollision();
 }
 
+function jsUpdateScore(score) {
+  g_finalScore = score;
+  g_scoreValueDiv.innerText = score;
+}
+
+function jsUpdateSpeed(speed) {
+  g_speedValueDiv.innerText = speed.toFixed(2);
+}
+
 const importObj = {
   env: {
     jsLogVector3D,
@@ -177,14 +190,20 @@ const importObj = {
     jsInitBomb,
     jsInitCoin,
     jsCheckCollision,
+    jsUpdateScore,
+    jsUpdateSpeed,
   },
 };
 
 window.onload = () => {
   g_canvas = document.getElementById("canvas");
+  const scoreDiv = document.getElementById("score");
+  const speedDiv = document.getElementById("speed");
+  g_scoreValueDiv = document.getElementById("score-value");
+  g_speedValueDiv = document.getElementById("speed-value");
   const body = document.getElementById("body");
-  g_beginView = document.getElementById("game-begin-view");
-  g_overView = document.getElementById("game-over-view");
+  g_beginViewDiv = document.getElementById("game-begin-view");
+  g_overViewDiv = document.getElementById("game-over-view");
   g_player = document.getElementById("player");
   g_player.style.position = "absolute";
   g_player.style.backgroundImage = "url(./assets/player.png)";
@@ -200,28 +219,39 @@ window.onload = () => {
   g_canvas.style.position = "absolute";
   g_canvas.style.backgroundColor = "black";
   g_canvas.style.overflow = "hidden";
-  g_beginView.style.position = "relative";
-  g_beginView.style.width = "100%";
-  g_beginView.style.height = "100%";
-  g_beginView.style.backgroundColor = "blue";
-  g_beginView.style.color = "white";
-  g_beginView.style.justifyContent = "center";
-  g_beginView.style.alignItems = "center";
-  g_beginView.style.zIndex = 100000;
-  g_beginView.style.fontSize = "xx-large";
-  g_beginView.style.fontFamily = "monospace";
+  g_beginViewDiv.style.position = "relative";
+  g_beginViewDiv.style.width = "100%";
+  g_beginViewDiv.style.height = "100%";
+  g_beginViewDiv.style.backgroundColor = "blue";
+  g_beginViewDiv.style.color = "white";
+  g_beginViewDiv.style.justifyContent = "center";
+  g_beginViewDiv.style.alignItems = "center";
+  g_beginViewDiv.style.zIndex = 100000;
+  g_beginViewDiv.style.fontSize = "xx-large";
+  g_beginViewDiv.style.fontFamily = "monospace";
 
-  g_overView.style.position = "relative";
-  g_overView.style.width = "100%";
-  g_overView.style.height = "100%";
-  g_overView.style.backgroundColor = "red";
-  g_overView.style.color = "white";
-  g_overView.style.justifyContent = "center";
-  g_overView.style.alignItems = "center";
-  g_overView.style.zIndex = 100000;
-  g_overView.style.fontSize = "xx-large";
-  g_overView.style.fontFamily = "monospace";
-  g_overView.style.textAlign = "center";
+  g_overViewDiv.style.position = "relative";
+  g_overViewDiv.style.width = "100%";
+  g_overViewDiv.style.height = "100%";
+  g_overViewDiv.style.backgroundColor = "red";
+  g_overViewDiv.style.color = "white";
+  g_overViewDiv.style.justifyContent = "center";
+  g_overViewDiv.style.alignItems = "center";
+  g_overViewDiv.style.zIndex = 100000;
+  g_overViewDiv.style.fontSize = "xx-large";
+  g_overViewDiv.style.fontFamily = "monospace";
+  g_overViewDiv.style.textAlign = "center";
+
+  scoreDiv.style.position = "absolute";
+  scoreDiv.style.display = "block";
+  scoreDiv.style.zIndex = 99999;
+  scoreDiv.style.fontFamily = "monospace";
+  speedDiv.style.position = "absolute";
+  speedDiv.style.top = "20px";
+  speedDiv.style.display = "block";
+  speedDiv.style.zIndex = 99999;
+  speedDiv.style.fontFamily = "monospace";
+
   WebAssembly.instantiateStreaming(wasmFile, importObj).then((result) => {
     memory = result.instance.exports.memory;
     result.instance.exports.engine_init();
