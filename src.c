@@ -23,14 +23,14 @@
 #define PLAYER_INITIAL_SPEED_Z (5.0)
 #define PLAYER_GAME_OVER_SPEED_Z (1.0)
 #define PLAYER_ACCELERATION_XY (5000.0)
-#define BOOST_Z (0.5)
+#define BOOST_Z (0.7)
 #define FRICTION_Z (-0.28)
 #define FRICTION_XY (-2.0)
 #define PLAYER_SIZE_PX (100)
 #define OBSTACLE_SIZE_PX (100)
-#define MAX_PLAYER_POS_X (10000) //((WALL_WIDTH_PX - PLAYER_SIZE_PX) / 2)
-#define MAX_PLAYER_POS_Y (10000) //((WALL_HEIGHT_PX - PLAYER_SIZE_PX) / 2)
 #define WALL_GAP_Z ((float)(FOV_MAX_Z - FOV_MIN_Z) / (float)NUM_OF_WALLS)
+#define FIRST_TICK_THRESHOLD (10)
+
 typedef struct
 {
     float x;
@@ -126,15 +126,14 @@ int g_keys_pressed           = 0;
 Wall g_walls[NUM_OF_WALLS]   = {0};
 Entity g_player              = (Entity){.position = {0}, .speed = {0}, .alive = true, .animated = false};
 PlayerAction g_player_action = {0};
-float g_path_x               = 0.0;
-float g_path_y               = 0.0;
+Vector2D g_path_position     = {0};
 int g_tick                   = 0;
 bool g_prev_pause_pressed    = false;
 GameState g_game_state       = GAME_BEGIN;
 int g_score                  = 0;
 
 const PathElement g_path[] = {
-    {10, 0, 0},
+    {FIRST_TICK_THRESHOLD, 0, 0},
     {20, 10, 0},
     {20, 0, 10},
     {20, -10, -10},
@@ -206,10 +205,10 @@ void engine_key_up(int key_code)
 
 void __read_input(void)
 {
-    g_player_action.player_up    = (g_keys_pressed & _UP_MASK) && (g_player.position.y <= MAX_PLAYER_POS_Y);
-    g_player_action.player_down  = (g_keys_pressed & _DOWN_MASK) && (g_player.position.y >= -MAX_PLAYER_POS_Y);
-    g_player_action.player_right = (g_keys_pressed & _RIGHT_MASK) && (g_player.position.x <= MAX_PLAYER_POS_X);
-    g_player_action.player_left  = (g_keys_pressed & _LEFT_MASK) && (g_player.position.x >= -MAX_PLAYER_POS_X);
+    g_player_action.player_up    = (g_keys_pressed & _UP_MASK);
+    g_player_action.player_down  = (g_keys_pressed & _DOWN_MASK);
+    g_player_action.player_right = (g_keys_pressed & _RIGHT_MASK);
+    g_player_action.player_left  = (g_keys_pressed & _LEFT_MASK);
     bool curr_pause_pressed      = (g_keys_pressed & _PAUSE_MASK) && (g_game_state == GAME_RUNNING);
     if (!g_prev_pause_pressed && curr_pause_pressed)
     {
@@ -247,13 +246,13 @@ void __evolve_wall(int wall_index, int path_element_index)
     if (wall_p->world.position.z <= FOV_MIN_Z)
     {
         // Reset near-field wall so that it reappears in the back
-        g_path_x += g_path[path_element_index].inc_x * 0.2 * g_tick;
-        g_path_y += g_path[path_element_index].inc_y * 0.2 * g_tick;
+        g_path_position.x += g_path[path_element_index].inc_x * 0.2 * g_tick;
+        g_path_position.y += g_path[path_element_index].inc_y * 0.2 * g_tick;
         g_tick++;
         wall_p->world.position.z += (float)(FOV_MAX_Z - FOV_MIN_Z);
-        wall_p->world.position.x = g_path_x;
-        wall_p->world.position.y = g_path_y;
-        if (jsGetRandom() < 0.2)
+        wall_p->world.position.x = g_path_position.x;
+        wall_p->world.position.y = g_path_position.y;
+        if (jsGetRandom() < 0.3)
         {
             wall_p->obstacle.present    = true;
             wall_p->obstacle.position.x = jsGetRandom() * (WALL_WIDTH_PX - OBSTACLE_SIZE_PX);
@@ -299,7 +298,7 @@ void __evolve_wall(int wall_index, int path_element_index)
 void __evolve(void)
 {
     static int path_element_index = 0;
-    static int tick_threshold     = 10;
+    static int tick_threshold     = FIRST_TICK_THRESHOLD;
     switch (g_game_state)
     {
     case GAME_BEGIN:
@@ -310,12 +309,12 @@ void __evolve(void)
             g_player.speed               = (Vector3D){.x = 0, .y = 0, .z = PLAYER_INITIAL_SPEED_Z};
             g_player.position            = (Vector3D){.x = 0, .y = 0, .z = 0};
             g_player_action.player_start = false;
-            tick_threshold               = 10;
+            tick_threshold               = FIRST_TICK_THRESHOLD;
             path_element_index           = 0;
             g_tick                       = 0;
             g_score                      = 0;
-            g_path_x                     = 0;
-            g_path_y                     = 0;
+            g_path_position.x            = 0;
+            g_path_position.y            = 0;
             for (int wallIndex = 0; wallIndex < NUM_OF_WALLS; wallIndex++)
             {
                 g_walls[wallIndex].obstacle.present = false;

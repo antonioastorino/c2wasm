@@ -234,6 +234,7 @@ window.onload = () => {
   g_overViewDiv.style.width = "100%";
   g_overViewDiv.style.height = "100%";
   g_overViewDiv.style.backgroundColor = "red";
+  g_overViewDiv.style.opacity = 0.7;
   g_overViewDiv.style.color = "white";
   g_overViewDiv.style.justifyContent = "center";
   g_overViewDiv.style.alignItems = "center";
