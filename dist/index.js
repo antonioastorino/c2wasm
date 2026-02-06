@@ -12,6 +12,14 @@ let g_num_of_walls = 0;
 let g_player = undefined;
 let g_canvas = undefined;
 let g_beginView = undefined;
+let g_overView = undefined;
+
+const GameState = {
+  BEGIN: 0,
+  PAUSED: 1,
+  RUNNING: 2,
+  OVER: 3,
+};
 
 class Wall {
   wallDiv;
@@ -125,10 +133,16 @@ function nextFrame(t_ms) {
   }
   prevTimeStamp = t_ms;
   const gameState = g_next_frame_cb();
-  if (gameState == 0) {
-    console.log("Should press start");
-  } else {
-    g_beginView.style.display = "none";
+  switch (gameState) {
+    case GameState.BEGIN:
+      g_beginView.style.display = "flex";
+      break;
+    case GameState.OVER:
+      g_overView.style.display = "flex";
+      break;
+    default:
+      g_beginView.style.display = "none";
+      g_overView.style.display = "none";
   }
   requestAnimationFrame(nextFrame);
 }
@@ -169,7 +183,8 @@ const importObj = {
 window.onload = () => {
   g_canvas = document.getElementById("canvas");
   const body = document.getElementById("body");
-  g_beginView = document.getElementById("begin-view");
+  g_beginView = document.getElementById("game-begin-view");
+  g_overView = document.getElementById("game-over-view");
   g_player = document.getElementById("player");
   g_player.style.position = "absolute";
   g_player.style.backgroundImage = "url(./assets/player.png)";
@@ -190,13 +205,23 @@ window.onload = () => {
   g_beginView.style.height = "100%";
   g_beginView.style.backgroundColor = "blue";
   g_beginView.style.color = "white";
-  g_beginView.style.display = "flex";
   g_beginView.style.justifyContent = "center";
   g_beginView.style.alignItems = "center";
   g_beginView.style.zIndex = 100000;
   g_beginView.style.fontSize = "xx-large";
   g_beginView.style.fontFamily = "monospace";
 
+  g_overView.style.position = "relative";
+  g_overView.style.width = "100%";
+  g_overView.style.height = "100%";
+  g_overView.style.backgroundColor = "red";
+  g_overView.style.color = "white";
+  g_overView.style.justifyContent = "center";
+  g_overView.style.alignItems = "center";
+  g_overView.style.zIndex = 100000;
+  g_overView.style.fontSize = "xx-large";
+  g_overView.style.fontFamily = "monospace";
+  g_overView.style.textAlign = "center";
   WebAssembly.instantiateStreaming(wasmFile, importObj).then((result) => {
     memory = result.instance.exports.memory;
     result.instance.exports.engine_init();
