@@ -134,14 +134,14 @@ int g_score                  = 0;
 
 const PathElement g_path[] = {
     {FIRST_TICK_THRESHOLD, 0, 0},
-    {20, 10, 0},
-    {20, 0, 10},
-    {20, -10, -10},
-    {10, 0, 0},
-    {10, -30, -30},
-    {10, -40, 0},
-    {10, 0, 30},
-    {10, 70, 0},
+    //    {20, 10, 0},
+    //    {20, 0, 10},
+    //    {20, -10, -10},
+    //    {10, 0, 0},
+    //    {10, -30, -30},
+    //    {10, -40, 0},
+    //    {10, 0, 30},
+    //    {10, 70, 0},
 };
 
 void jsLogVector3D(Vector3D);
@@ -209,7 +209,7 @@ void __read_input(void)
     g_player_action.player_down  = (g_keys_pressed & _DOWN_MASK);
     g_player_action.player_right = (g_keys_pressed & _RIGHT_MASK);
     g_player_action.player_left  = (g_keys_pressed & _LEFT_MASK);
-    bool curr_pause_pressed      = (g_keys_pressed & _PAUSE_MASK) && (g_game_state == GAME_RUNNING);
+    bool curr_pause_pressed      = (g_keys_pressed & _PAUSE_MASK) && (g_game_state == GAME_RUNNING || g_game_state == GAME_PAUSED);
     if (!g_prev_pause_pressed && curr_pause_pressed)
     {
         g_player_action.player_pause = !g_player_action.player_pause;
